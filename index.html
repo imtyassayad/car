@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>3D Model Color Customizer App | Codrops</title>
+    <meta name="description" content="Demo for the tutorial on how to build a 3d model color customizer app with Three.js." />
+    <meta name="keywords" content="three.js, color customizer, app, tutorial, 3d model, blender, javascript" />
+    <meta name="author" content="Kyle Wetton for Codrops" />
+    <link rel="shortcut icon" href="favicon.ico">
+    <link href="https://fonts.googleapis.com/css?family=Raleway:500,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <!-- We add the loader CSS here so that assets don't pop in before the bundled CSS is loaded -->
+    <style>
+    .loading {
+        position: fixed;
+        z-index: 50;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        background: #f1f1f1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .loader {
+        -webkit-perspective: 120px;
+        -moz-perspective: 120px;
+        -ms-perspective: 120px;
+        perspective: 120px;
+        width: 100px;
+        height: 100px;
+    }
+
+    .loader::before {
+        content: "";
+        position: absolute;
+        left: 25px;
+        top: 25px;
+        width: 50px;
+        height: 50px;
+        background-color: #ff0000;
+        animation: flip 1s infinite;
+    }
+
+    @keyframes flip {
+        0% {
+            transform: rotate(0);
+        }
+
+        50% {
+            transform: rotateY(180deg);
+        }
+
+        100% {
+            transform: rotateY(180deg) rotateX(180deg);
+        }
+    }
+    </style>
+</head>
+
+<body>
+    <!-- The loading element overlays all else until the model is loaded, at which point we remove this element from the DOM -->
+    <div class="loading" id="js-loader">
+        <div class="loader"></div>
+    </div>
+    <!-- Just a quick notice to the user that it can be interacted with -->
+    <span class="drag-notice" id="js-drag-notice">Drag to rotate 360&#176;</span>
+    <!-- These toggle the the different parts of the chair that can be edited, note data-option is the key that links to the name of the part in the 3D file -->
+    <div class="options">
+        <!-- Body -->
+        <div class="option --is-active" data-option="body" title="Body">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRzRqAJsWx786WUzMmrsp6VqOGmvsltxHbhbg&usqp=CAU" alt="" />
+        </div>
+        <div class="option" data-option="exterior_design" title="Exterior Design">
+            <img src="https://thumbs.dreamstime.com/b/car-logo-22545528.jpg" alt=""/>
+        </div> 
+
+        <!-- exterior -->
+        <div class="option" data-option="deck" title="Convertable Deck">
+            <img src="https://thumbs.dreamstime.com/b/modern-cabriolet-icon-simple-style-modern-cabriolet-icon-simple-illustration-modern-cabriolet-vector-icon-web-design-157472345.jpg" alt=""/>
+        </div> 
+        <div class="option" data-option="mudguard" title="Mud Guard">
+            <img src="https://5.imimg.com/data5/OP/EE/MY-21701725/car-fender-lining-500x500.jpg" alt="" />
+        </div>
+        <div class="option" data-option="grill" title="Front Grill">
+            <img src="https://cdn-icons-png.flaticon.com/512/1394/1394428.png" alt="" />
+        </div>  
+        <div class="option" data-option="exhaust" title="Exhaust">
+            <img src="https://e7.pngegg.com/pngimages/502/975/png-clipart-exhaust-system-car-computer-icons-pipe-car-exhaust-system-rectangle-thumbnail.png" alt=""/>
+        </div>
+        <div class="option" data-option="light" title="Lights">
+            <img src="data:image/png;base64,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" alt=""/>
+        </div>    
+        <div class="option" data-option="windsheild" title="Windshielid">
+            <img src="https://image.shutterstock.com/image-vector/car-windscreen-flat-clipart-vector-260nw-2090841739.jpg" alt=""/>
+        </div> 
+        <div class="option" data-option="body_frame" title="Windsheild Frame">
+            <img src="https://cdn4.iconfinder.com/data/icons/elasto-auto-1/26/01-ELASTOFONT-AUTO-READY_windshield-512.png" alt=""/>
+        </div>  
+        <div class="option" data-option="37" title="Windsheild top frame">
+            <img src="https://cdn11.bigcommerce.com/s-87tdo79yuh/images/stencil/500x659/products/354/1384/DSCN1819__59006.1634666141.JPG?c=1" alt=""/>
+        </div>  
+        <div class="option" data-option="mirrors" title="Rear Mirrors">
+            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANgAAADpCAMAAABx2AnXAAAAwFBMVEX///8UFBQREiQAAADa2tuNjY0PDw8GBgbV1dVTU1Pi4uIlJSULCwvw8PDo6Og+Pj739/cwMDC+vr4AABdFRUWvr69QUFCGhoYAABzGxsZLS0ulpaWfn5/Nzc0AABTt7e2WlpZoaGh6enofHx9ycnJcXFx3d3crKyu1tbVqanM/Pz83Nzdra2uUlJofIC8AAA4UFiZ5eYFZWmMpKjhBQUwAAB+EhIxMTVczNEFKSlQjJTNiY2upqa83OUZ+f4ebnaRCcZDDAAAL60lEQVR4nO1cC1viOhAFggWxIIJKkYcIvioWLHALisD//1c3SVnahEkfUHBx5+znt0ofzGkyJzOTpKkUAoFAIBAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUD8UygWsruhVP5p01UoVc6eLsg+SF8/nt1k73+aiIBs546ZpqX3gaZzerfdSumn+axRuSYktxcnP70cZffWKfw0qVTqppccqz+gbdfv/Gy7Vfp7dsAAbg/1H6NVfiD6QWhx0GZ7/RlederrB4VOejc/wOvsQL3QD41cVo7N6xFoLm2vkYzkgCelk/Ojykj5dpsXIb2nZn0npS6X8pWb7t0FNBoS0knY+CBs86IyVinueddy9ub9YpsbucwmYnQEPMi8COkm1GPK+VpOVqUcaSRz8zDUpC/WyLnbAws3z/2d3OvirtusbELh1pPcbOTpGGHyjcRLdx9osXHtGnklAh4U+vRIemM9D6VI76G57nSlM128jFwdvjsWJEtJOs8+7qSJrr1USsWyiNQdFHORfKpMR0K55emoXON3SxXPxA6ZIwePRC5FQ8kV04x6mnceAohiFmqy3B07tOWrPJh6afJ+V3wWwlCNHHi0bkp95IXxqq19gpwDV3QhZoTFS3Ljbxquxh9Q/k44fljdL2mCW+tppobekydApCBdsr7wijWLLEM+anzsaAqNdlBm0uMnLfrZufeZ3gfkqwk2GbOyrIrLtPW4XLj0X0vODsarJPFi3y54CmkCV10A5muE1QFkhfUf77OHJj5J8O6JQGwwvU8/6hDRHiD+qIBN9sgOXavzVJ3U2BkNf6uSA6Uy5e2OmJfV/xm47hxkxoRdlnzxjH6Jn+JL+3jfTx4NUaaeUlvqv7ZXAij55JYdAiTfQ46LUUH3vkODRpT9cSuwYE9v20liSn4piBjl0WHMet73krcDRFfiuKNf0o9etqsDkOTfQ/KnX7BDCsnf3I05WkHzvsb1zWQh9cQGLAuuvRICJL8XnIpzIgXfgzlACPIuEqOe/aS0VwbQtPTMYMlfn/ROT2r5mSWeVAvjkZbeUsk/RwhQqg6Q/MuQYhfpivRBL94H90T+OoVYg24ANy5T71ZYuYtHHD5fTDrxrG+5WEdhUkzJBzkLpzG3ut6cpeWSnb2QtKOuHoRceyU8g8z4QBVaoWSjV8lzM+52yUFsH0JzWjCJ3NgrAYx4NcIOnYUx03t09Hr1dUagS+yO5y1RvFa5vdYDrldLfhEKk8XTmNt6HSQHdYltFLKRBFR0BSZ9aj2DJL98BZyu6ey7G+GdsSJEKREqBa0HXoOphXM7FwOqYhAxLQfcL0Dy+2HzGxop+9vcrS0EoPzsFk1oZheqoXGIwZKvjvJDJd9NG7xhPqzJvLKCFpqfih4VQgz0b1D+ctfsUGCU794w69ePEC8T5hbCsjjRw8OI5d6AWwQVdkL1g2dJXpMFVRrFDqC/BGcEUpYZQgx8TvdpSPIv2PeGSj4PU7wm44GWCu+SrYFNJtc7woiBzykgyoemkQTw3rfJBbS0ehKkKGUMwalOJSYxOMoHJZ/H62FRvuu2XpQQ0Axy9spTRyXk5g0lpkH5BRg3uyHSVpVh67QH2hgesSelqbJIaVCK+Aeye4QTg0M6YM4wSmHHPe1eqM4qQ+FYxORJ5wjEokf5ESWf1RU9j1Cn0nGI5Yn+EkvuPXslgEUObmRolK/T+xU3PYf1zL2J3bOJHDFWjEAsuuS7EhpS2HHTF19f3J9YvkdIvRifmH6RTC1/c1bTr57K6mlUYsUajZLrkohGIgbPI+xe2Mk9+a1WlvKjEcvX0oRc5OXRIRoxULoCJD+glu+eRXvAxtdzqqpOOLH7Sq1PSI48sh61GzFI8uHCThTJZ71v42RgOhtIrFwsZivN2i1L1HSqRa5q70QMdITdJZ/1Pi8rVQXCALFy46z7ft53Vw+tu4W+Tup2IwamhLDkh9fyucR7rapKygBiBU5Il8bi+h7EQMkvgoWdnpKz30R/VKVQD5AYcLf1OLsjMZ7UywCLHFxCQ2r57GYeMUXUHpXY2k92JAZLPljkiBDlM7faZAiqODg6scd9iMWO8gPT15ZPVHUoZItDzB2NdiUGB3U71vJZGW5TYNBe4GQzBrHGPsRAyQ/w5qBaPouWN1UETYczl+jE+PqA3YnFLuwEEBPmQhRTZdGJrWcFdiUGpk671fJZsJwoseZexDQtnuSra/kSMXgNQQxiLH6QiNHu/RZ54X1kyQ8r7LAnnCQxTSvJxAoB00iAvYAJAZIPFbPcw37xSIAYk1mJWD3CVKTv9IQkn33tc6LEujKxRpTqrWRviAEcXIGVUT6LPLxJhP3Fgw3yErGaYl5IdYM+YEFQYQfUD66a3kUJEKMqKK4a0F/8cXYEQPNUci3aNaOnruWz6NDL5vaPPNgt6yIxrvdhmbxoL2BFgOTrUJOx1vSuUU3/xSPWkdqHBQnh9XbZXhkxo3yWtdx5LqZYPRCLWO5JIsYeVxla76tmBmgYKH+uhL5tdwc2d+Qzcd9Ec30X2aOYQKmWsMB3gNIndWEH4Mwejc/5VIXFmMS2FpN2w9euSVfEi/K399B0Bb3R0oqZypjEthydNVkcxY8r+XJhh8ulv8FUE0kxiW1ZwJehQVvk1PeILPkXQC2fRR1+ssqpv3jEtLftXWvszv0YzMDOEyD5wvQtL+/7V1RAVaIdiAGTJDy0LSo2HIFwl5xLgGv5suTzS/0TGuqZ5ZjEAOQu6UO7j9NmUBAUIPleBMB5CfmAeqXY/sRcNyufR99iG0PyWz4mOh+yssLmAvUSlgSIrQ1tRt8UDZWlwYjXJ/kaucpzXnrIjRIkliZ3vDT3EJUauDQBHOeZ5N/T4UQj6U4qJW2ZCFwZnAixNOnxYTfbZVMzEbokuTvfwh0kH1rvtp9mWxybRZe8OAcesGUiGWJsdw3X3XKldpXefYM3iPRdx5WI7LVoWeCStoSI0W9JN9ZDSrmUzSeHzQLRUld6vQaBKpXJE6Nu8HLA14u0HmUH1gLXviVIbP16kfq+m9cBG1+7PWA3e/AKxCSJudwIuQKkYVfcXvM3DG0LUtia0YSJuez0XHJQiGzgUsVDETsCwE2Fv4AYGEefPjEtys7aEyRGIu0+PTliOnmItEPz1IiRi4jvBjopYmyXftQNtadDTNu8DeM3EaMRjf4Y6z0lqrVUfxnezuLGoACxYu3sb0Ljdac3XcVann5K+LXE5Np46Da6U0FZmnWLEF6eCICi/++AtA7gt/TElDjREVIgOTHUNhWFI7yE7Ki4Iax+y2pMv6m9GMqN8/7L5cPRXxZ6DJT/2pd8IxAIBAKBQCAQCAQCgUAgEAgEAoFAIBAIBAKBQCAQCAQCgUAgEIh/CNlfitRPb+A7FFKZXwokdmoIJGYYwl/rn9PAmtiC/owH7u+zj/Wx6mjUHi/+nPnxaWS+RrPjmrc7XGKGOTeqVrVdzVTbxPkw2u2q0SbfFOaKtAnJGITM8oQsnMkP2xsZ6xYbWO3B0rYcsrTspTWzLPtzNc1OCTHvR1a+NZ5ks5/1SX48WQTf7oCAvYB6y4eRMT7cX5nvrM9bE2tbH6ZpV21zTojzn5Uhtj0aTlrZpWmNW2T+XV+Qr1LeOK6LVc0vuz1oj79mxpeRsZezr8zA+JouKIsv+skgM2ibpjV1TMecfM8se+5MrYVjGn5ixnzkjKy5aU+MtvPfalg1nakxJEZ22Zm+ksVrazgcl/KD4xIzpubS+rZNc2nbpmXa9nzpjGxztRhSNrbjrJzF3LAyy8nKyazmi+XQmtif32bVTyxjfNsDyxiPrcxgNDdHH9ZoaqxMqz7JjrNmxbZe7UnrMzs8KrFM+3VsjZz51KaNMh1Ztuk4tF85o8z3ZGWuprSJBqvpeMk+suaOY1GzzaUjETMHxrhmG2PLHs6J6QzGM2NqLavt0ed/1rw9pF3SJPaxpYPq9GQ4+ZgZk8xgsKjOBuPqZJyZfQ0WVMc/6H/GhOp0dWJ8Ldr0o9FsmpmIPub6XNXgP/QfZ21QlWSft5lLttnHR+YVBYbwu/fXvxl5nDKQ2Knhf8+iHPb8s4FxAAAAAElFTkSuQmCC" alt=""/>
+        </div> 
+        <div class="option" data-option="sidebrand" title="Side Brand Background">
+            <img src="https://i.pinimg.com/originals/95/a7/f6/95a7f6b63dd3eb1dff9a2af87b27674c.png" alt=""/>
+        </div> 
+        <div class="option" data-option="sidelogo" title="Side Brand Logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Honda.svg/1280px-Honda.svg.png" alt=""/>
+        </div>  
+        <div class="option " data-option="tyre" title="Tyre">
+            <img title="Tyre" src="https://st.depositphotos.com/1674252/2872/v/380/depositphotos_28722659-stock-illustration-black-terrain-tyre-symbol.jpg?forcejpeg=trues alt="" />
+        </div>
+        <div  class="option" data-option="macwheel" title="Mac Wheel">
+            <img title="interior" src="https://cdn-icons-png.flaticon.com/512/226/226335.png" alt="" />
+        </div>
+        <div class="option" data-option="front_mac" title="Front Mac Wheel">
+            <img title="Roof" src="https://rukminim1.flixcart.com/image/416/416/kg5fzww0/wheel-cover/r/u/f/unbreakable-quality-wheel-rim-cover-type-14-inch-for-car-wheel-original-imafwg8hyyu8qsbv.jpeg?q=70" alt="" />
+        </div> 
+        <div class="option" data-option="mclogo" title="Macwheel Logo">
+            <img src="https://cdn1.iconfinder.com/data/icons/cars-5/512/mercedes-sign-round-auto-car-brand-star-512.png" alt="" />
+        </div>
+        <!-- Interior -->
+        <div class="option" data-option="interior" title="Inerior">
+            <img src="https://cdn-icons-png.flaticon.com/512/2052/2052406.png" alt=""/>
+        </div>  
+        <div class="option" data-option="carpet" title="Interior Mat">
+            <img src="https://cdn4.iconfinder.com/data/icons/car-parts-solid-elasto-font-next-2020/16/02_car-mats-512.png" alt="" />
+        </div>
+        <div class="option" data-option="carpet_border" title="Mat Border Strip">
+            <img src="https://cdn4.iconfinder.com/data/icons/car-parts-elasto-font-next-2020/16/02_car-mats-512.png" alt="" />
+        </div>
+        <div class="option" data-option="dashboard" title="Dashboard">
+            <img src="https://fixedopsdigital.s3.amazonaws.com/oem/general/icons/grey/general/2D2929-car-interior-icon-min.png" alt=""/>
+        </div>  
+        <div class="option" data-option="cluster" title="Cluster Background">
+            <img src="https://static.vecteezy.com/system/resources/previews/005/723/349/original/dashboard-car-panel-speed-display-with-gauge-icon-black-color-illustration-image-flat-style-vector.jpg" alt=""/>
+        </div>  
+        <div class="option" data-option="guage" title="Cluster Meter">
+            <img src="https://img.favpng.com/5/21/1/car-speedometer-icon-dashboard-png-favpng-BnKfTqiGTjRjKew3t6Z699Wes.jpg" alt=""/>
+        </div> 
+        <div class="option" data-option="metal" title="Fornt Control Panel background">
+            <img src="https://cdn.xxl.thumbs.canstockphoto.com/car-control-panel-icon-line-element-vector-illustration-of-car-control-panel-icon-line-isolated-on-vector-clipart_csp81025508.jpg    " alt="" />
+        </div> 
+        <div class="option" data-option="music" title="Music System">
+            <img src="https://cdn-icons-png.flaticon.com/512/3903/3903034.png" alt="" />
+        </div>
+        <div class="option" data-option="controls"  title="Controls">
+            <img src="https://media.istockphoto.com/vectors/car-clock-air-vent-icons-vector-id165802961?s=612x612" alt=""/>
+        </div>  
+        <div class="option" data-option="handle" title="Interior Handel">
+            <img src="https://image.shutterstock.com/image-vector/outside-car-door-lock-cover-260nw-1781507378.jpg" alt="" />
+        </div>
+        <!-- cluster -->
+        <div class="option" data-option="slogo" title="Steering Logo">
+            <img src="https://png.pngtree.com/png-vector/20191030/ourlarge/pngtree-car-steering-wheel-icon-simple-style-png-image_1911230.jpg" alt="" />
+        </div>
+        <div class="option" data-option="stcover" title="Steering Cover">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNmjr0AaeZ4DkN2H-dMx3uQCMm6-ElDm814g&usqp=CAU" alt="" />
+        </div>
+        <div class="option" data-option="fled" title="Dashboard LED">
+            <img src="https://static.thenounproject.com/png/1530055-200.png" alt="" />
+        </div> 
+        <div class="option" data-option="pedal" title="Padel ">
+            <img src="https://thumbs.dreamstime.com/b/pedal-icon-black-color-illustration-flat-style-simple-image-vector-112487871.jpg" alt="" />
+        </div> 
+        <div class="option" data-option="key" title="Key">
+            <img src="https://media.istockphoto.com/vectors/flat-design-vector-car-key-with-remote-vector-id997674510?b=1&k=20&m=997674510&s=612x612&w=0&h=ato55_EU2ZWZmQeugQnINoVt6bHkV2pREOWtualngU8=" alt="" />
+        </div>
+        <!-- <div class="option" data-option="keychhain">
+            <img src="https://cdn0.iconfinder.com/data/icons/nfc-implant-glyph-silhouettes/300/16195464Untitled-3-512.png" alt="" />
+        </div> -->
+        <div class="option" data-option="keychain" title="Key Chain">
+            <img src="https://cdn0.iconfinder.com/data/icons/nfc-implant-glyph-silhouettes/300/16195464Untitled-3-512.png" alt="" />
+        </div> 
+       
+        <!--  --> 
+        <div class="option" data-option="26">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Question_mark_%28black%29.svg/800px-Question_mark_%28black%29.svg.png" alt=""/>
+        </div>  
+        <div class="option" data-option="28">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Question_mark_%28black%29.svg/800px-Question_mark_%28black%29.svg.png" alt=""/>
+        </div>  
+        <div class="option" data-option="30">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Question_mark_%28black%29.svg/800px-Question_mark_%28black%29.svg.png" alt=""/>
+        </div>    
+          
+          
+           
+      
+          
+          
+       
+          
+    </div>  
+       <!-- The canvas element is used to draw the 3D scene -->
+       <canvas id="c"></canvas>
+       <div class="controls">
+           <div class="info">
+               <div class="info__message">
+                   <p><strong>&nbsp;Grab&nbsp;</strong> to rotate chair. <strong>&nbsp;Scroll&nbsp;</strong> to zoom. <strong>&nbsp;Drag&nbsp;</strong> swatches to view more.</p>
+               </div>
+           </div>
+           <!-- This tray will be filled with colors via JS, and the ability to slide this panel will be added in with a lightweight slider script (no dependency used for this) -->
+           <div id="js-tray" class="tray">
+               <div id="js-tray-slide" class="tray__slide"></div>
+           </div>
+       </div>
+       <div class="frame">
+           <h1 class="frame__title">3D Model Color Customizer App created By</h1>
+           <div class="frame__links">
+              
+                
+           </div>
+       </div>
+
+       
+       <!-- The main three.js file -->
+       <script src='https://unpkg.com/three@0.127.0/build/three.js'></script>
+       <!-- This brings in the ability to load custom 3D objects in the .gltf file format. Blender allows the ability to export to this format out the box -->
+       <script src='https://cdn.jsdelivr.net/gh/mrdoob/three.js@r92/examples/js/loaders/GLTFLoader.js'></script>
+       <!-- This is a simple to use extension for three.js that activates all the rotating, dragging and zooming controls we need for both mouse and touch, there isn't a clear CDN for this that I can find -->
+       <script src='https://threejs.org/examples/js/controls/OrbitControls.js'></script>
+       <script src="script.js"></script>
+   </body>
+   
+   </html>
