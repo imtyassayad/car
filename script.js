@@ -338,6 +338,7 @@ function initColor(parent, type, object, mtl) {
       //   o.nameID = 'tyre'; // Set a new property to identify this object
 
       // }
+      
        
         if (o.name.includes('Object203.002_0')) { 
          
