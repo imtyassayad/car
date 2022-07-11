@@ -305,6 +305,15 @@ loader.load(MODEL_PATH, function (gltf) {
    
   }
 
+  // CLICK TO ADD / REMOVE OBJECT
+  const rmbtn = document.getElementById("remove");
+  rmbtn.addEventListener('click', removeObj);
+
+  const addbtn = document.getElementById("show");
+  addbtn.addEventListener('click',addObj);
+
+
+
   // Add the model to the scene
   scene.add(theModel);
 
@@ -592,6 +601,44 @@ function initColor(parent, type, object, mtl) {
 
     }
   }); 
+}
+
+// ADD / REMOVE OBJECTS
+function removeObj()
+{
+  
+  theModel.traverse(o => { 
+    if(o.nameID == activeOption)
+    {
+       
+      if(o.visible )
+      {
+        o.visible = false;
+      }
+      else{
+        console.log('object is already remved.');
+      }
+    }
+  });
+}
+function addObj()
+{
+  
+  theModel.traverse(o => { 
+    if(o.nameID == activeOption)
+    {
+   
+    if(!o.visible )
+    {
+      o.visible = true;
+    }
+    else{
+      console.log('object is already added.');
+    }
+
+    // o.removeFromParent()
+    }
+  });
 }
 
 // Add lights
